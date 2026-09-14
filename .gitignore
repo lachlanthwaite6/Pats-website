@@ -1,0 +1,17 @@
+node_modules/
+.wrangler/
+.build/
+.dev.vars*
+.env*
+!.env.example
+private/
+*.xlsx
+*.log
+.DS_Store
+.sites-runtime/
+coverage/
+
+.venv/
+
+__pycache__/
+*.py[cod]

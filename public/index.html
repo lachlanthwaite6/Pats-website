@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Flipped Energy portfolio, plan and competitor analysis."
+    />
+    <title>Flipped · Energy intelligence</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f2336'/%3E%3Cpath d='M18 4 8 18h7l-1 10 11-16h-8z' fill='%2322c6d8'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="/style.css" />
+    <script type="module" src="/app.js"></script>
+  </head>
+  <body>
+    <a class="skip" href="#content">Skip to content</a>
+    <aside>
+      <a class="brand" href="#overview"
+        ><span class="brand-icon">ϟ</span
+        ><span
+          >flipped<span class="brand-sub">ENERGY INTELLIGENCE</span></span
+        ></a
+      >
+      <p class="nav-label">WORKSPACE</p>
+      <nav aria-label="Dashboard pages">
+        <a href="#overview" data-page="overview"><span>01</span>Overview</a
+        ><a href="#plans" data-page="plans"><span>02</span>Plan analysis</a
+        ><a href="#elasticity" data-page="elasticity"
+          ><span>03</span>Ranking & sign-ups</a
+        ><a href="#backbook" data-page="backbook"><span>04</span>Back-book</a
+        ><a href="#competitors" data-page="competitors"
+          ><span>05</span>Competitors</a
+        ><a href="#quality" data-page="quality"><span>06</span>Data quality</a>
+      </nav>
+      <div class="sidebar-note">
+        <span class="tiny-label">DATA SOURCE</span
+        ><strong>Workbook snapshot</strong>
+        <p id="sidebar-date">Loading dataset…</p>
+      </div>
+    </aside>
+    <div class="workspace">
+      <header>
+        <span
+          >Pricing strategy <span class="slash">/</span>
+          <strong id="breadcrumb">Overview</strong></span
+        ><span class="badge" id="source-badge">Read-only</span>
+      </header>
+      <main id="content" tabindex="-1">
+        <div class="page-title">
+          <div>
+            <p class="eyebrow">FLIPPED ENERGY</p>
+            <h1 id="page-title">Portfolio overview</h1>
+            <p id="page-description">
+              Customer movement, margins and market position.
+            </p>
+          </div>
+          <button id="refresh" class="button">Refresh data ↻</button>
+        </div>
+        <div id="state" role="status">
+          Loading the latest validated snapshot…
+        </div>
+        <div id="view" hidden></div>
+        <footer>
+          <span id="data-dates"></span><span>Snapshot analysis · AUD</span>
+        </footer>
+      </main>
+    </div>
+  </body>
+</html>
