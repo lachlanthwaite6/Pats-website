@@ -1,5 +1,7 @@
 # Flipped Energy dashboard
 
+[Open the live dashboard](https://flipped-energy-dashboard.flipped-energy-dashboard.workers.dev) · [Source repository](https://github.com/lachlanthwaite6/Pats-website)
+
 A small public dashboard for workbook-based energy pricing analysis, hosted on Cloudflare Workers and D1. Visitors can filter graphs and tables without per-user R processes. Five analysis views are accompanied by explicit source-quality notes.
 
 The supplied workbook was approved for public dashboard viewing. The workbook itself, original R source and credentials are excluded from Git and static hosting. Exported summary values and frontend code are public and downloadable.

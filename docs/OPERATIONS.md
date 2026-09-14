@@ -1,5 +1,9 @@
 # Operations
 
+Live URL: https://flipped-energy-dashboard.flipped-energy-dashboard.workers.dev
+
+The initial operator secret is stored in the working computer’s ignored `private/production-ingest-token` file with owner-only permissions, and as the Cloudflare Worker secret. Transfer it to your password manager before removing this workspace. It has not been included in GitHub or shared with site visitors.
+
 ## Initial deployment
 
 The configured Cloudflare Worker is `flipped-energy-dashboard`, with a dedicated D1 database. Use the existing database ID in `wrangler.jsonc`; do not create another database on every deployment.
