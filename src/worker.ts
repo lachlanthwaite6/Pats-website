@@ -1,5 +1,5 @@
 import { snapshotSchema } from "./schema";
-import { canRead, canWrite, type AccessEnv } from "./auth";
+import { canRead, canWrite, readChallenge, type AccessEnv } from "./auth";
 import { adapters } from "./integrations";
 export interface Env extends AccessEnv {
   DB: D1Database;
@@ -46,7 +46,7 @@ export async function boundedText(request: Request, max: number) {
   }
   return new TextDecoder().decode(bytes);
 }
-export default {
+const app = {
   async fetch(
     request: Request,
     env: Env,
@@ -54,9 +54,20 @@ export default {
   ): Promise<Response> {
     const url = new URL(request.url);
     const path = url.pathname;
-    if (!path.startsWith("/api/")) return env.ASSETS.fetch(request);
     const requestId = crypto.randomUUID();
     try {
+      // Every asset and read endpoint passes through this gate. Admin routes
+      // authenticate separately with the stronger, independent ingestion secret.
+      if (!path.startsWith("/api/admin/") && !(await canRead(request, env)))
+        return readChallenge(request, env);
+      if (!path.startsWith("/api/")) {
+        const assetRequest = new Request(request);
+        if (env.DATA_ACCESS !== "public") {
+          assetRequest.headers.delete("If-None-Match");
+          assetRequest.headers.delete("If-Modified-Since");
+        }
+        return await env.ASSETS.fetch(assetRequest);
+      }
       if (path === "/api/health" && request.method === "GET")
         return json({ status: "ok", version: "1.0.0" });
       if (path.startsWith("/api/admin/")) {
@@ -138,8 +149,6 @@ export default {
         return json({ error: "method_not_allowed" }, 405, {
           Allow: "GET, HEAD",
         });
-      if (!(await canRead(request, env)))
-        return json({ error: "sign_in_required" }, 401);
       if (path === "/api/v1/integrations")
         return json({
           integrations: [...adapters.values()].map((a) => ({
@@ -181,6 +190,8 @@ export default {
       });
       if (env.DATA_ACCESS === "public")
         ctx.waitUntil(caches.default.put(cacheKey, response.clone()));
+      // Never revalidate a formerly public browser copy in private mode.
+      if (env.DATA_ACCESS !== "public") response.headers.delete("ETag");
       return conditional(response, request);
     } catch (error) {
       if (error instanceof Error && error.message === "BODY_TOO_LARGE")
@@ -192,6 +203,54 @@ export default {
     }
   },
 } satisfies ExportedHandler<Env>;
+
+export default {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext) {
+    const url = new URL(request.url);
+    if (
+      url.protocol !== "https:" &&
+      !["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)
+    ) {
+      url.protocol = "https:";
+      return new Response(null, {
+        status: 308,
+        headers: { Location: url.href, "Cache-Control": "no-store" },
+      });
+    }
+    const response = await app.fetch(request, env, ctx);
+    if (env.DATA_ACCESS === "public") return response;
+    const protectedResponse = new Response(
+      request.method === "HEAD" ? null : response.body,
+      response,
+    );
+    protectedResponse.headers.set(
+      "Cache-Control",
+      "private, no-store, max-age=0",
+    );
+    protectedResponse.headers.set("CDN-Cache-Control", "no-store");
+    protectedResponse.headers.set("Cloudflare-CDN-Cache-Control", "no-store");
+    protectedResponse.headers.set("Vary", "Authorization");
+    protectedResponse.headers.set(
+      "X-Robots-Tag",
+      "noindex, nofollow, noarchive",
+    );
+    protectedResponse.headers.set("X-Content-Type-Options", "nosniff");
+    protectedResponse.headers.set("X-Frame-Options", "DENY");
+    protectedResponse.headers.set("Referrer-Policy", "no-referrer");
+    protectedResponse.headers.set(
+      "Cross-Origin-Resource-Policy",
+      "same-origin",
+    );
+    protectedResponse.headers.set(
+      "Strict-Transport-Security",
+      "max-age=31536000",
+    );
+    protectedResponse.headers.delete("ETag");
+    protectedResponse.headers.delete("Last-Modified");
+    return protectedResponse;
+  },
+} satisfies ExportedHandler<Env>;
+
 export function conditional(response: Response, request: Request) {
   // Cloudflare compression may convert the outgoing validator to a weak ETag.
   // GET/HEAD If-None-Match uses weak comparison and can contain multiple tags.

@@ -2,24 +2,24 @@
 
 [Open the live dashboard](https://flipped-energy-dashboard.flipped-energy-dashboard.workers.dev) · [Source repository](https://github.com/lachlanthwaite6/Pats-website)
 
-A small public dashboard for workbook-based energy pricing analysis, hosted on Cloudflare Workers and D1. Visitors can filter graphs and tables without per-user R processes. Five analysis views are accompanied by explicit source-quality notes.
+A small password-protected dashboard for workbook-based energy pricing analysis, hosted on Cloudflare Workers and D1. Signed-in visitors can filter graphs and tables without per-user R processes. Five analysis views are accompanied by explicit source-quality notes.
 
-The supplied workbook was approved for public dashboard viewing. The workbook itself, original R source and credentials are excluded from Git and static hosting. Exported summary values and frontend code are public and downloadable.
+The whole website and read API require the shared viewing login (username `dashboard`). The workbook, exported snapshot, original R source and credentials are excluded from Git and static hosting. The source repository contains application code, not the published dataset. Authenticated viewers can still copy the data they can see. Password protection cannot revoke copies downloaded while the site was previously public.
 
 ## Architecture
 
 ```text
 Excel workbook → offline Python import/validation → authenticated snapshot API → D1
                                                                               ↓
-Browser ← static HTML/CSS/JS + cached read API ← Cloudflare Worker
+Browser ← authenticated HTML/CSS/JS + private read API ← Cloudflare Worker
 
 Future provider adapter → validated snapshot → same publication path
 Optional local R/Shiny companion ← exported snapshot
 ```
 
-- Static assets bypass Worker execution. Only `/api/*` invokes the Worker.
+- Every request, including static assets, invokes the Worker and passes authentication before content is served. Production preview URLs are disabled.
 - `/api/v1/dashboard` returns one compact snapshot; filters operate in the browser.
-- Public API responses cache for 60 seconds, use ETags and share a query-independent cache key.
+- Password-protected responses use `private, no-store`, never consult the public API cache and do not emit ETags. Read credentials are stored as a Cloudflare secret, never in frontend code.
 - Snapshot publication validates a strict schema, stores a content hash and updates the active pointer in a D1 transaction. Repeated identical submissions are idempotent.
 - Up to ten recent snapshots plus an older active/referenced snapshot are retained. Export snapshots separately for long-term recovery.
 - Admin endpoints require a strong bearer secret; there is no browser admin/code editor.
@@ -38,7 +38,7 @@ mkdir -p private
 .venv/bin/python scripts/import_workbook.py private/FLIPPEDupdated.xlsx
 ```
 
-Create `.dev.vars` with a randomly generated local `INGEST_TOKEN` of at least 32 characters; keep it out of Git. Then:
+Create `.dev.vars` with separate randomly generated local `INGEST_TOKEN` (at least 32 characters) and `DASHBOARD_PASSWORD` (at least 24 characters); keep them out of Git. Then:
 
 ```bash
 npm run db:local
@@ -51,7 +51,7 @@ In a second terminal:
 node scripts/seed-local.mjs
 ```
 
-Open `http://127.0.0.1:8787`. The development database is separate from Cloudflare production. The workbook import is not automatically run on page visits or code deployment.
+Open `http://127.0.0.1:8787` and use username `dashboard` with the local password. The development database is separate from Cloudflare production. The workbook import is not automatically run on page visits or code deployment.
 
 ## Checks
 

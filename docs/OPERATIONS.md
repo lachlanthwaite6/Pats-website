@@ -4,6 +4,16 @@ Live URL: https://flipped-energy-dashboard.flipped-energy-dashboard.workers.dev
 
 The initial operator secret is stored in the working computer’s ignored `private/production-ingest-token` file with owner-only permissions, and as the Cloudflare Worker secret. Transfer it to your password manager before removing this workspace. It has not been included in GitHub or shared with site visitors.
 
+## Shared viewing login
+
+The active configuration is `DATA_ACCESS=password`, `assets.run_worker_first=true` and `preview_urls=false`. The username is `dashboard`. The generated 192-bit viewing password is stored as the Cloudflare `DASHBOARD_PASSWORD` secret and in the working computer's ignored, owner-only `private/dashboard-login.txt`. Store it in a password manager and share only with intended viewers. It is separate from the operator token and cannot upload or alter data.
+
+The browser supplies its native username/password prompt. It may remember credentials until the browser session ends or they are cleared; there is no per-person logout/revocation. To revoke the shared password, generate a new strong random password (at least 24 characters), save it securely, then run `npx wrangler secret put DASHBOARD_PASSWORD` and enter it at the prompt. Existing requests using the old password then fail. Never put the password in a command argument, source file, public issue or URL. Do not roll back to a pre-password Worker version: that would republish the data.
+
+Every asset, read API, health check and error response is gated. Admin routes require the independent operator token. Private responses bypass the former public Cache API entries and use no-store headers with no ETags. Previously downloaded or cached public data cannot be revoked retroactively; authorized viewers can still save data. This is shared read access, not protection against an authorized viewer redistributing it.
+
+Read-only verification: set `DASHBOARD_PASSWORD` securely in the test process environment and run `node scripts/verify-protection.mjs https://flipped-energy-dashboard.flipped-energy-dashboard.workers.dev`. It tests anonymous/incorrect access, authenticated reads, private-file exclusion, cache headers and denied viewer writes without changing data.
+
 ## Initial deployment
 
 The configured Cloudflare Worker is `flipped-energy-dashboard`, with a dedicated D1 database. Use the existing database ID in `wrangler.jsonc`; do not create another database on every deployment.
@@ -16,6 +26,7 @@ npm run build
 npx wrangler d1 migrations apply DB --remote
 npm run deploy
 npx wrangler secret put INGEST_TOKEN
+npx wrangler secret put DASHBOARD_PASSWORD
 ```
 
 Use a randomly generated 256-bit ingestion secret. Keep it in a password manager or a local restricted file outside Git. The secret command prompts securely. The admin API fails closed until a strong secret is configured. No database content is embedded in the deployment bundle.
@@ -26,7 +37,7 @@ After setting INGEST_TOKEN in the current terminal environment:
 node scripts/publish-snapshot.mjs https://YOUR-WORKER.workers.dev private/snapshot.json
 ```
 
-Use the exact deployed hostname returned by Wrangler. Do not send real data to a guessed hostname. The import endpoint validates before updating the active pointer. Existing visitors can see the previous cached dataset for up to 60 seconds after a publish or rollback. There is no automatic refresh while a dashboard is open.
+Use the exact deployed hostname returned by Wrangler. Do not send real data to a guessed hostname. The import endpoint validates before updating the active pointer. A refresh reads the active dataset directly in password mode; there is no automatic refresh while a dashboard is open.
 
 ## Updating code
 
@@ -47,11 +58,11 @@ Code rollback: `npx wrangler deployments list`, then `npx wrangler rollback <ver
 As verified against official documentation on 14 September 2026:
 
 - Workers Free: 100,000 dynamic requests per day, 10 ms CPU per invocation; limits apply account-wide.
-- Static asset requests are free and unlimited under Workers Static Assets; API requests still invoke the Worker even on cache hits.
+- This password-protected configuration invokes the Worker for every request, including HTML/CSS/JavaScript, so all of these requests count toward Worker limits. Protected API reads access D1 directly. Assets would be free only when served without invoking a Worker, which would bypass this authentication design.
 - D1 Free: 5 million rows read/day, 100,000 rows written/day, 5 GB total storage. These limits are not the same as HTTP requests. Retention/deletion and index maintenance count toward writes.
 - Free limits can reject requests when exhausted. No upgrade or paid product is needed or enabled by this project; confirm your account's existing subscription separately.
 
-At 20 viewers, one initial API request each is about 20 dynamic invocations. Changing page, graph filters or the model slider does not call the backend. Manual refresh makes another request. External provider polling, bots and retries would be additional usage.
+Each page load requests roughly five resources (HTML, CSS, two JavaScript files and the dataset), plus any authentication challenge/retries. Twenty viewers opening once therefore make roughly 100 Worker requests plus login overhead and around 20 dataset reads. Changing page, graph filters or the model slider does not call the backend. Manual refresh makes another request. External provider polling, bots and retries would be additional usage.
 
 In Cloudflare, inspect Workers & Pages → flipped-energy-dashboard → Metrics (requests, CPU, errors), and Storage & Databases → D1 → flipped-energy → Metrics (rows and storage). Review particularly CPU on imports, which perform validation. A dry build or low traffic does not establish unlimited scalability. Worker logs are sampled at 10%; they log failure metadata, not credentials or body contents.
 

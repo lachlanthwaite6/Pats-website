@@ -4,4 +4,5 @@
   Referrer-Policy: no-referrer
   Permissions-Policy: camera=(), microphone=(), geolocation=()
   Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'
-  Cache-Control: public, max-age=300
+  Cache-Control: private, no-store
+  X-Robots-Tag: noindex, nofollow, noarchive
