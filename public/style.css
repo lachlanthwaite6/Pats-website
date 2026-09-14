@@ -102,15 +102,8 @@ nav a {
   color: #bbcad7;
   display: flex;
   align-items: center;
-  gap: 14px;
   padding: 13px 12px;
   border-radius: 7px;
-}
-nav a span {
-  font:
-    12px ui-monospace,
-    monospace;
-  color: #748b9e;
 }
 nav a:hover {
   background: #19374b;
@@ -118,9 +111,6 @@ nav a:hover {
 nav a[aria-current="page"] {
   background: #214457;
   color: #fff;
-}
-nav a[aria-current="page"] span {
-  color: #65d7df;
 }
 .sidebar-note {
   margin-top: auto;
@@ -548,9 +538,6 @@ footer {
   .brand {
     font-size: 30px;
   }
-  nav a {
-    gap: 8px;
-  }
   .stat strong {
     font-size: 28px;
   }
@@ -584,9 +571,6 @@ footer {
     white-space: nowrap;
     padding: 9px 11px;
     font-size: 12px;
-  }
-  nav a span {
-    display: none;
   }
   .workspace {
     margin-left: 0;
