@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import worker, { boundedText, type Env } from "../src/worker";
+import worker, { boundedText, conditional, type Env } from "../src/worker";
 import { canRead, canWrite } from "../src/auth";
 import { fetchProviderJson, adapters } from "../src/integrations";
 import { snapshotSchema } from "../src/schema";
@@ -134,5 +134,27 @@ test("snapshot schema rejects unknown fields, NaN and inconsistent totals", () =
   assert.equal(
     snapshotSchema.safeParse({ overview: { totalCustomers: NaN } }).success,
     false,
+  );
+});
+
+test("cache validators match compressed weak tags and lists", () => {
+  for (const tag of [
+    '"snapshot"',
+    'W/"snapshot"',
+    '"old", W/"snapshot"',
+    "*",
+  ]) {
+    const result = conditional(
+      new Response("{}", { headers: { ETag: '"snapshot"' } }),
+      request("/", { headers: { "If-None-Match": tag } }),
+    );
+    assert.equal(result.status, 304);
+  }
+  assert.equal(
+    conditional(
+      new Response("{}", { headers: { ETag: '"snapshot"' } }),
+      request("/", { headers: { "If-None-Match": '"different"' } }),
+    ).status,
+    200,
   );
 });

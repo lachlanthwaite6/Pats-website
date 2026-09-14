@@ -192,8 +192,16 @@ export default {
     }
   },
 } satisfies ExportedHandler<Env>;
-function conditional(response: Response, request: Request) {
-  if (request.headers.get("If-None-Match") === response.headers.get("ETag"))
+export function conditional(response: Response, request: Request) {
+  // Cloudflare compression may convert the outgoing validator to a weak ETag.
+  // GET/HEAD If-None-Match uses weak comparison and can contain multiple tags.
+  const current = response.headers.get("ETag")?.replace(/^W\//, "");
+  const candidates =
+    request.headers
+      .get("If-None-Match")
+      ?.split(",")
+      .map((tag) => tag.trim().replace(/^W\//, "")) ?? [];
+  if (current && candidates.some((tag) => tag === "*" || tag === current))
     return new Response(null, { status: 304, headers: response.headers });
   return request.method === "HEAD"
     ? new Response(null, { status: response.status, headers: response.headers })
