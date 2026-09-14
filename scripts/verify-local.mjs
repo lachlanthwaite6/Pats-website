@@ -9,9 +9,13 @@ const token = fs
 const password = fs
   .readFileSync(".dev.vars", "utf8")
   .match(/^DASHBOARD_PASSWORD=(.+)$/m)[1];
+const username =
+  fs
+    .readFileSync(".dev.vars", "utf8")
+    .match(/^DASHBOARD_USERNAME=(.+)$/m)?.[1] ?? "dashboard";
 const viewerHeaders = {
   Authorization:
-    "Basic " + Buffer.from("dashboard:" + password).toString("base64"),
+    "Basic " + Buffer.from(username + ":" + password).toString("base64"),
 };
 const headers = {
   Authorization: `Bearer ${token}`,

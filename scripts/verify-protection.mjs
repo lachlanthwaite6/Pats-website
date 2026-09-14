@@ -10,9 +10,10 @@ if (
 if (origin.pathname !== "/" || origin.username || origin.password)
   throw Error("Supply an origin only");
 const password = process.env.DASHBOARD_PASSWORD;
+const username = process.env.DASHBOARD_USERNAME ?? "dashboard";
 if (!password) throw Error("DASHBOARD_PASSWORD environment variable required");
 const authorization =
-  "Basic " + Buffer.from("dashboard:" + password).toString("base64");
+  "Basic " + Buffer.from(username + ":" + password).toString("base64");
 const call = (path, headers = {}, method = "GET") =>
   fetch(new URL(path, origin), {
     headers,
@@ -66,7 +67,8 @@ for (const path of paths) {
 for (const path of ["/", "/api/v1/dashboard"]) {
   const blocked = await call(path, {
     Authorization:
-      "Basic " + Buffer.from("dashboard:incorrect-password").toString("base64"),
+      "Basic " +
+      Buffer.from(username + ":incorrect-password").toString("base64"),
   });
   assert.equal(blocked.status, 401);
   await blocked.arrayBuffer();

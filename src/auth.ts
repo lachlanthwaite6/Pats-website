@@ -5,6 +5,7 @@ export interface AccessEnv {
   ACCESS_AUD?: string;
   INGEST_TOKEN?: string;
   DASHBOARD_PASSWORD?: string;
+  DASHBOARD_USERNAME?: string;
 }
 const keys = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
 // Compare fixed-length digests; never compare secrets with string equality.
@@ -22,6 +23,14 @@ async function sameSecret(a: string, b: string): Promise<boolean> {
 async function canReadWithPassword(request: Request, env: AccessEnv) {
   if (!env.DASHBOARD_PASSWORD || env.DASHBOARD_PASSWORD.length < 24)
     return false;
+  const username = env.DASHBOARD_USERNAME ?? "dashboard";
+  if (
+    !username ||
+    username.length > 64 ||
+    username.trim() !== username ||
+    /[:\x00-\x1f\x7f]/.test(username)
+  )
+    return false;
   const authorization = request.headers.get("Authorization");
   if (!authorization || authorization.length > 2048) return false;
   const match = /^Basic ([A-Za-z0-9+/]+={0,2})$/i.exec(authorization);
@@ -31,7 +40,7 @@ async function canReadWithPassword(request: Request, env: AccessEnv) {
       fatal: true,
       ignoreBOM: true,
     }).decode(Uint8Array.from(atob(match[1]), (char) => char.charCodeAt(0)));
-    return await sameSecret(decoded, "dashboard:" + env.DASHBOARD_PASSWORD);
+    return await sameSecret(decoded, username + ":" + env.DASHBOARD_PASSWORD);
   } catch {
     return false;
   }

@@ -4,7 +4,7 @@
 
 A small password-protected dashboard for workbook-based energy pricing analysis, hosted on Cloudflare Workers and D1. Signed-in visitors can filter graphs and tables without per-user R processes. Five analysis views are accompanied by explicit source-quality notes.
 
-The whole website and read API require the shared viewing login (username `dashboard`). The workbook, exported snapshot, original R source and credentials are excluded from Git and static hosting. The source repository contains application code, not the published dataset. Authenticated viewers can still copy the data they can see. Password protection cannot revoke copies downloaded while the site was previously public.
+The whole website and read API require the shared viewing login (default username `dashboard`, configurable through `DASHBOARD_USERNAME`). The workbook, exported snapshot, original R source and credentials are excluded from Git and static hosting. The source repository contains application code, not the published dataset. Authenticated viewers can still copy the data they can see. Password protection cannot revoke copies downloaded while the site was previously public.
 
 ## Architecture
 
@@ -62,6 +62,8 @@ node scripts/verify-local.mjs  # requires local server and seeded dataset
 ```
 
 See [Operations](docs/OPERATIONS.md) for deploy, publish, rollback and quota monitoring; [Data definitions](docs/DATA.md) for differences from the supplied R app; [API contract](docs/API.md) for integrations.
+
+To change the live viewing login, edit and save `private/dashboard-login.txt`, then run `node scripts/apply-login.mjs`. Editing the file alone does not update Cloudflare. Passwords must be 24–256 characters; the command validates the file, updates both credentials securely, and verifies live access without printing either credential. Use `--check` for local validation without uploading.
 
 ## R/Shiny
 

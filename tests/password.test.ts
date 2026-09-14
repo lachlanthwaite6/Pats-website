@@ -109,6 +109,42 @@ test("rotating the password invalidates the old credentials", async () => {
   );
 });
 
+test("configured username replaces the default and invalid usernames deny access", async () => {
+  const renamed = { ...env, DASHBOARD_USERNAME: "course-viewer" };
+  assert.equal(
+    await canRead(
+      request("/", { headers: { Authorization: basic() } }),
+      renamed,
+    ),
+    false,
+  );
+  assert.equal(
+    await canRead(
+      request("/", {
+        headers: { Authorization: basic(password, "course-viewer") },
+      }),
+      renamed,
+    ),
+    true,
+  );
+  for (const username of [
+    "",
+    " leading",
+    "trailing ",
+    "with:colon",
+    "with\nnewline",
+    "a".repeat(65),
+  ]) {
+    assert.equal(
+      await canRead(
+        request("/", { headers: { Authorization: basic(password, username) } }),
+        { ...env, DASHBOARD_USERNAME: username },
+      ),
+      false,
+    );
+  }
+});
+
 test("authenticated assets override public cache headers and old cache validators", async () => {
   const assets = {
     async fetch(input: Request) {
